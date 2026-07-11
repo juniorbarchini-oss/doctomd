@@ -1,4 +1,4 @@
-# MarkItDown Web Service (RAG-Ready)
+# DocToMD Web Service (RAG-Ready)
 
 Este proyecto es un microservicio web de código abierto diseñado para auto-alojarse en tu servidor local (**NODCASA** vía Portainer) o correr de forma local en tu Mac. Permite convertir cualquier documento de oficina en texto **Markdown** limpio y estructurado, listo para alimentar tuberías de **RAG (Retrieval-Augmented Generation)** o tu bóveda de **Obsidian**.
 
@@ -13,7 +13,7 @@ Este proyecto es un microservicio web de código abierto diseñado para auto-alo
 
 ## Estructura del Proyecto
 ```text
-markitdown-web-service/
+doctomd/
 ├── main.py                  # API Backend (FastAPI + MarkItDown + Tesseract)
 ├── requirements.txt         # Dependencias Python
 ├── Dockerfile               # Construcción del contenedor multi-stage
@@ -37,7 +37,7 @@ Si deseas correr la aplicación directamente en tu Mac en lugar de Docker:
 
 2. **Clonar e Inicializar Entorno Virtual:**
    ```bash
-   cd /Users/hbarchini/Documents/desarrollo/markitdown-web-service
+   cd /Users/hbarchini/Documents/desarrollo/doctomd
    python3 -m venv venv
    source venv/bin/activate
    ```
@@ -66,12 +66,12 @@ Puedes copiar este contenido directamente en el editor web de Stacks en Portaine
 version: '3.8'
 
 services:
-  markitdown-web:
-    image: ghcr.io/hbarchini/markitdown-web-service:latest  # Si decides subirlo a GHCR, o constrúyelo localmente
+  doctomd:
+    image: ghcr.io/hbarchini/doctomd:latest  # Si decides subirlo a GHCR, o constrúyelo localmente
     # Si vas a compilar desde código en Portainer, puedes usar la opción de Git Repository o Build de Portainer.
     build:
       context: .
-    container_name: markitdown-web-service
+    container_name: doctomd-service
     ports:
       - "8490:8490"
     volumes:

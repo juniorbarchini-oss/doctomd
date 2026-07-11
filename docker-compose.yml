@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  markitdown-web:
+  doctomd:
     build: .
-    container_name: markitdown-web-service
+    container_name: doctomd-service
     ports:
       - "8490:8490"
     volumes:
