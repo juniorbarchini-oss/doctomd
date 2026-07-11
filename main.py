@@ -15,6 +15,19 @@ from pdf2image import convert_from_path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("markitdown-web")
 
+# Parche de compatibilidad para la librería markdownify en markitdown
+try:
+    from markitdown._markitdown import _CustomMarkdownify
+    original_convert_a = _CustomMarkdownify.convert_a
+    
+    def patched_convert_a(self, el, text, convert_as_inline=False, *args, **kwargs):
+        return original_convert_a(self, el, text, convert_as_inline)
+        
+    _CustomMarkdownify.convert_a = patched_convert_a
+    logger.info("Se aplicó con éxito el parche de compatibilidad para _CustomMarkdownify.convert_a")
+except Exception as e:
+    logger.error(f"Fallo al aplicar el parche a _CustomMarkdownify: {e}")
+
 app = FastAPI(title="MarkItDown Web Service")
 
 # Habilitar CORS por si se usa de forma remota

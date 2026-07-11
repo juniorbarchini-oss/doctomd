@@ -1,6 +1,6 @@
 fastapi==0.110.0
 uvicorn==0.28.0
-markitdown==0.0.1a4
+markitdown[all]==0.0.1a4
 python-multipart==0.0.9
 pdf2image==1.17.0
 pytesseract==0.3.10
