@@ -311,7 +311,6 @@
 
         /* Batch Actions */
         .batch-actions {
-            margin-top: auto;
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
@@ -680,6 +679,18 @@
                 <input type="file" id="file-input" class="file-input" multiple accept=".pdf,.docx,.xlsx,.xls,.pptx,.csv,.json,.xml,.html,.txt">
             </div>
 
+            <!-- Batch actions -->
+            <div class="batch-actions" id="batch-actions" style="display: none; margin-bottom: 0.5rem;">
+                <button class="btn btn-primary" onclick="downloadAllZip()">
+                    <i data-lucide="file-archive" style="width: 18px; height: 18px;"></i>
+                    Descargar lote en ZIP
+                </button>
+                <button class="btn btn-success" onclick="saveAllToServer()">
+                    <i data-lucide="server" style="width: 18px; height: 18px;"></i>
+                    Guardar lote en Servidor
+                </button>
+            </div>
+
             <!-- Queue list -->
             <div class="queue-container">
                 <div class="queue-header">
@@ -694,18 +705,6 @@
                 <div class="queue-list" id="queue-list">
                     <!-- Dynamic insertion -->
                 </div>
-            </div>
-
-            <!-- Batch actions -->
-            <div class="batch-actions" id="batch-actions" style="display: none;">
-                <button class="btn btn-primary" onclick="downloadAllZip()">
-                    <i data-lucide="file-archive" style="width: 18px; height: 18px;"></i>
-                    Descargar lote en ZIP
-                </button>
-                <button class="btn btn-success" onclick="saveAllToServer()">
-                    <i data-lucide="server" style="width: 18px; height: 18px;"></i>
-                    Guardar lote en Servidor
-                </button>
             </div>
         </div>
 
