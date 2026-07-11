@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarkItDown Converter | RAG-Ready</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Marked.js (Markdown renderer) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- JSZip (Client-side ZIP generation) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-surface: #131b2e;
+            --bg-element: #1e2942;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-focus: #6366f1;
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --accent: #06b6d4;
+            
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            
+            --font-display: 'Outfit', 'Inter', sans-serif;
+            --font-sans: 'Inter', sans-serif;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: linear-gradient(180deg, rgba(19, 27, 46, 0.8) 0%, rgba(19, 27, 46, 0) 100%);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .logo-icon i {
+            color: white;
+            width: 20px;
+            height: 20px;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            background: var(--bg-surface);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            height: calc(100vh - 81px);
+            overflow: hidden;
+        }
+
+        /* Sidebar Column */
+        .sidebar {
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+            background-color: rgba(19, 27, 46, 0.4);
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            background: var(--bg-surface);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+        }
+
+        .drop-zone-icon {
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .drop-zone:hover .drop-zone-icon {
+            color: var(--primary);
+            transform: translateY(-4px);
+        }
+
+        .drop-zone p {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .drop-zone span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Queue List */
+        .queue-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .queue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .queue-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            overflow-y: auto;
+            max-height: 300px;
+            padding-right: 2px;
+        }
+
+        .queue-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .queue-item:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: var(--bg-element);
+        }
+
+        .queue-item.active {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.05);
+        }
+
+        .queue-item-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .queue-item-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-element);
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        /* File extension color coding */
+        .queue-item-icon.pdf { color: #f87171; }
+        .queue-item-icon.docx { color: #60a5fa; }
+        .queue-item-icon.xlsx, .queue-item-icon.xls { color: #34d399; }
+        .queue-item-icon.pptx { color: #fb923c; }
+
+        .queue-item-details {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .queue-item-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .queue-item-size {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .queue-item-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+            color: var(--primary);
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Batch Actions */
+        .batch-actions {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-element);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-success:hover {
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        /* Workspace panel (Right) */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: var(--bg-base);
+        }
+
+        .welcome-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .welcome-screen i {
+            width: 64px;
+            height: 64px;
+            color: var(--text-muted);
+            stroke-width: 1.5;
+        }
+
+        .welcome-screen h2 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .editor-header {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .active-file-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .ocr-badge {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .editor-btn {
+            background: var(--bg-element);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .editor-btn:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .editor-btn.active {
+            border-color: var(--primary);
+            background: var(--primary-glow);
+            color: var(--primary);
+        }
+
+        .editor-layout {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+        }
+
+        .editor-layout.raw-only {
+            grid-template-columns: 1fr;
+        }
+
+        .editor-layout.preview-only {
+            grid-template-columns: 1fr;
+        }
+
+        .pane {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .pane-header {
+            background: rgba(19, 27, 46, 0.6);
+            border-bottom: 1px solid var(--border);
+            padding: 0.5rem 1.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pane-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .raw-pane {
+            border-right: 1px solid var(--border);
+        }
+
+        .raw-textarea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            resize: none;
+            color: #e2e8f0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* Markdown rendered styling */
+        .markdown-body {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #cbd5e1;
+        }
+
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            font-family: var(--font-display);
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .markdown-body h1 { font-size: 1.6rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .markdown-body h2 { font-size: 1.3rem; }
+        .markdown-body h3 { font-size: 1.1rem; }
+
+        .markdown-body p {
+            margin-bottom: 1rem;
+        }
+
+        .markdown-body ul, .markdown-body ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        .markdown-body li {
+            margin-bottom: 0.25rem;
+        }
+
+        .markdown-body table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .markdown-body th, .markdown-body td {
+            border: 1px solid var(--border);
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+
+        .markdown-body th {
+            background-color: var(--bg-element);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .markdown-body tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .markdown-body code {
+            font-family: monospace;
+            background: var(--bg-element);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .markdown-body pre {
+            background: var(--bg-element);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            overflow-x: auto;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .markdown-body pre code {
+            background: transparent;
+            padding: 0;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transform: translateY(150%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+        }
+
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
+        .toast.info { border-color: var(--primary); }
+
+        .toast-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.error .toast-icon { color: var(--error); }
+        .toast.info .toast-icon { color: var(--primary); }
+
+        .toast-content {
+            font-size: 0.9rem;
+        }
+
+        .toast-content span {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">
+                <i data-lucide="file-text"></i>
+            </div>
+            <div>
+                <h1>MarkItDown Web UI</h1>
+                <p style="font-size: 0.75rem; color: var(--text-secondary);">Servicio local de conversión para RAG</p>
+            </div>
+        </div>
+        <div class="server-status">
+            <div class="status-dot"></div>
+            <span>Conectado a NODCASA</span>
+        </div>
+    </header>
+
+    <main>
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Drag and Drop Zone -->
+            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                <div class="drop-zone-icon">
+                    <i data-lucide="cloud-upload" style="width: 48px; height: 48px;"></i>
+                </div>
+                <p>Arrastra archivos aquí o haz clic</p>
+                <span>Soporta PDF (OCR), Word y Excel</span>
+                <input type="file" id="file-input" class="file-input" multiple accept=".pdf,.docx,.xlsx,.xls,.pptx,.csv,.json,.xml,.html,.txt">
+            </div>
+
+            <!-- Queue list -->
+            <div class="queue-container">
+                <div class="queue-header">
+                    <span>Cola de Procesamiento</span>
+                    <span id="queue-count">0 archivos</span>
+                </div>
+                <div class="queue-list" id="queue-list">
+                    <!-- Dynamic insertion -->
+                </div>
+            </div>
+
+            <!-- Batch actions -->
+            <div class="batch-actions" id="batch-actions" style="display: none;">
+                <button class="btn btn-primary" onclick="downloadAllZip()">
+                    <i data-lucide="file-archive" style="width: 18px; height: 18px;"></i>
+                    Descargar lote en ZIP
+                </button>
+                <button class="btn btn-success" onclick="saveAllToServer()">
+                    <i data-lucide="server" style="width: 18px; height: 18px;"></i>
+                    Guardar lote en Servidor
+                </button>
+            </div>
+        </div>
+
+        <!-- Workspace (Preview & Editor) -->
+        <div class="workspace" id="workspace">
+            <div class="welcome-screen" id="welcome-screen">
+                <i data-lucide="file-code"></i>
+                <h2>No hay archivos seleccionados</h2>
+                <p>Sube archivos en el panel izquierdo para comenzar la conversión digital.</p>
+            </div>
+
+            <div class="editor-container" id="editor-container" style="display: none;">
+                <div class="editor-header">
+                    <div class="active-file-title" id="active-file-title">
+                        <i data-lucide="file"></i>
+                        <span id="file-title-text">nombre_archivo.pdf</span>
+                        <span class="ocr-badge" id="ocr-badge" style="display: none;">
+                            <i data-lucide="eye" style="width: 12px; height: 12px;"></i> OCR Aplicado
+                        </span>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="editor-btn" onclick="toggleLayout('raw')" id="layout-raw-btn" title="Código Raw (Markdown)">
+                            <i data-lucide="code-2" style="width: 18px; height: 18px;"></i>
+                        </button>
+                        <button class="editor-btn active" onclick="toggleLayout('split')" id="layout-split-btn" title="Vista Dividida">
+                            <i data-lucide="columns" style="width: 18px; height: 18px;"></i>
+                        </button>
+                        <button class="editor-btn" onclick="toggleLayout('preview')" id="layout-preview-btn" title="Vista Previa Renderizada">
+                            <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                        </button>
+                        <div style="width: 1px; background: var(--border); margin: 0 0.5rem;"></div>
+                        <button class="editor-btn" onclick="copyActiveContent()" title="Copiar al portapapeles">
+                            <i data-lucide="copy" style="width: 18px; height: 18px;"></i>
+                        </button>
+                        <button class="editor-btn" onclick="downloadActiveFile()" title="Descargar archivo Markdown">
+                            <i data-lucide="download" style="width: 18px; height: 18px;"></i>
+                        </button>
+                        <button class="editor-btn" onclick="saveActiveToServer()" title="Guardar directamente en NODCASA" style="color: var(--success); border-color: rgba(16, 185, 129, 0.3);">
+                            <i data-lucide="server" style="width: 18px; height: 18px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="editor-layout" id="editor-layout">
+                    <!-- Raw Editor Pane -->
+                    <div class="pane raw-pane" id="raw-pane">
+                        <div class="pane-header">Código Fuente Markdown</div>
+                        <div class="pane-content">
+                            <textarea class="raw-textarea" id="markdown-editor" spellcheck="false"></textarea>
+                        </div>
+                    </div>
+                    <!-- Rendered Preview Pane -->
+                    <div class="pane preview-pane" id="preview-pane">
+                        <div class="pane-header">Vista Previa Visual</div>
+                        <div class="pane-content markdown-body" id="markdown-preview"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-icon">
+            <i id="toast-icon-element" data-lucide="info"></i>
+        </div>
+        <div class="toast-content">
+            <h4 id="toast-title">Notificación</h4>
+            <span id="toast-desc">Detalle del evento</span>
+        </div>
+    </div>
+
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+
+        // App State
+        let filesQueue = [];
+        let activeFileId = null;
+        let isProcessing = false;
+        let layoutState = 'split'; // raw, split, preview
+
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const queueList = document.getElementById('queue-list');
+        const queueCount = document.getElementById('queue-count');
+        const batchActions = document.getElementById('batch-actions');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const editorContainer = document.getElementById('editor-container');
+        const markdownEditor = document.getElementById('markdown-editor');
+        const markdownPreview = document.getElementById('markdown-preview');
+        const fileTitleText = document.getElementById('file-title-text');
+        const ocrBadge = document.getElementById('ocr-badge');
+        const activeFileTitleIcon = document.querySelector('.active-file-title i');
+
+        // Drag and Drop Events
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // Live edit syncing
+        markdownEditor.addEventListener('input', (e) => {
+            if (activeFileId !== null) {
+                const fileIndex = filesQueue.findIndex(f => f.id === activeFileId);
+                if (fileIndex !== -1) {
+                    filesQueue[fileIndex].markdown = e.target.value;
+                    renderPreview(e.target.value);
+                }
+            }
+        });
+
+        // Handle uploaded files
+        function handleFiles(files) {
+            if (files.length === 0) return;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileId = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                const fileObj = {
+                    id: fileId,
+                    name: file.name,
+                    size: formatBytes(file.size),
+                    rawFile: file,
+                    status: 'queued', // queued, converting, done, error
+                    markdown: '',
+                    ocrApplied: false,
+                    errorMsg: ''
+                };
+                
+                filesQueue.push(fileObj);
+                addQueueItemToDOM(fileObj);
+            }
+
+            updateQueueCount();
+            
+            if (!isProcessing) {
+                processNextInQueue();
+            }
+        }
+
+        // Add file to DOM list
+        function addQueueItemToDOM(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            const itemHTML = `
+                <div class="queue-item" id="${file.id}" onclick="selectQueueItem('${file.id}')">
+                    <div class="queue-item-info">
+                        <div class="queue-item-icon ${ext}">
+                            <i data-lucide="${getFileIcon(ext)}"></i>
+                        </div>
+                        <div class="queue-item-details">
+                            <span class="queue-item-name" title="${file.name}">${file.name}</span>
+                            <span class="queue-item-size">${file.size}</span>
+                        </div>
+                    </div>
+                    <div class="queue-item-status">
+                        <i data-lucide="clock" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+                    </div>
+                </div>
+            `;
+            queueList.insertAdjacentHTML('beforeend', itemHTML);
+            lucide.createIcons({attrs: {class: 'lucide'}});
+        }
+
+        // Process Queue Sequentially
+        async function processNextInQueue() {
+            const nextFile = filesQueue.find(f => f.status === 'queued');
+            
+            if (!nextFile) {
+                isProcessing = false;
+                showBatchActionsIfNeeded();
+                return;
+            }
+
+            isProcessing = true;
+            nextFile.status = 'converting';
+            updateQueueItemStatusUI(nextFile.id, 'converting');
+
+            const formData = new FormData();
+            formData.append('file', nextFile.rawFile);
+
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || 'Error en la conversión');
+                }
+
+                const result = await response.json();
+                nextFile.status = 'done';
+                nextFile.markdown = result.markdown;
+                nextFile.ocrApplied = result.ocr_applied;
+                
+                updateQueueItemStatusUI(nextFile.id, 'done', result.ocr_applied);
+                
+                // If it's the first file processed or there's no active file, select it
+                if (activeFileId === null) {
+                    selectQueueItem(nextFile.id);
+                } else if (activeFileId === nextFile.id) {
+                    // Update current editor if we had it open
+                    loadEditorData(nextFile);
+                }
+
+                showToast('Convertido', `"${nextFile.name}" procesado con éxito.`, 'success');
+
+            } catch (error) {
+                nextFile.status = 'error';
+                nextFile.errorMsg = error.message;
+                updateQueueItemStatusUI(nextFile.id, 'error');
+                showToast('Error', `Error al procesar "${nextFile.name}": ${error.message}`, 'error');
+            }
+
+            processNextInQueue();
+        }
+
+        // Select and display file details
+        function selectQueueItem(fileId) {
+            const file = filesQueue.find(f => f.id === fileId);
+            if (!file) return;
+
+            // Remove active classes
+            document.querySelectorAll('.queue-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Set active class
+            const domItem = document.getElementById(fileId);
+            if (domItem) domItem.classList.add('active');
+
+            activeFileId = fileId;
+            
+            if (file.status === 'queued' || file.status === 'converting') {
+                // Show temporary view in editor
+                welcomeScreen.style.display = 'flex';
+                editorContainer.style.display = 'none';
+                welcomeScreen.innerHTML = `
+                    <i data-lucide="loader-2" class="spinner" style="width: 48px; height: 48px;"></i>
+                    <h2>Procesando archivo...</h2>
+                    <p>"${file.name}" se encuentra actualmente en conversión digital.</p>
+                `;
+                lucide.createIcons();
+            } else if (file.status === 'error') {
+                welcomeScreen.style.display = 'flex';
+                editorContainer.style.display = 'none';
+                welcomeScreen.innerHTML = `
+                    <i data-lucide="alert-circle" style="color: var(--error); width: 48px; height: 48px;"></i>
+                    <h2 style="color: var(--error)">Error de Conversión</h2>
+                    <p>${file.errorMsg}</p>
+                `;
+                lucide.createIcons();
+            } else {
+                welcomeScreen.style.display = 'none';
+                editorContainer.style.display = 'flex';
+                loadEditorData(file);
+            }
+        }
+
+        // Load data to Editor View
+        function loadEditorData(file) {
+            fileTitleText.textContent = file.name;
+            markdownEditor.value = file.markdown;
+            
+            // Set header icon
+            const ext = file.name.split('.').pop().toLowerCase();
+            activeFileTitleIcon.setAttribute('data-lucide', getFileIcon(ext));
+            activeFileTitleIcon.className = `lucide ${ext}`;
+            
+            // Show OCR Badge
+            if (file.ocrApplied) {
+                ocrBadge.style.display = 'flex';
+            } else {
+                ocrBadge.style.display = 'none';
+            }
+
+            renderPreview(file.markdown);
+            lucide.createIcons();
+        }
+
+        // Render Markdown to Preview pane
+        function renderPreview(markdown) {
+            if (!markdown) {
+                markdownPreview.innerHTML = '<p style="color: var(--text-muted)">Archivo vacío.</p>';
+                return;
+            }
+            markdownPreview.innerHTML = marked.parse(markdown);
+        }
+
+        // Update file status in DOM
+        function updateQueueItemStatusUI(fileId, status, ocrApplied = false) {
+            const domItem = document.getElementById(fileId);
+            if (!domItem) return;
+
+            const statusContainer = domItem.querySelector('.queue-item-status');
+            
+            if (status === 'converting') {
+                statusContainer.innerHTML = `<i data-lucide="loader-2" class="spinner" style="width: 18px; height: 18px;"></i>`;
+            } else if (status === 'done') {
+                const badge = ocrApplied ? `<span style="font-size:0.6rem; color:var(--accent); margin-right:4px; font-weight:600;">OCR</span>` : '';
+                statusContainer.innerHTML = `${badge}<i data-lucide="check-circle-2" style="color: var(--success); width: 18px; height: 18px;"></i>`;
+            } else if (status === 'error') {
+                statusContainer.innerHTML = `<i data-lucide="alert-circle" style="color: var(--error); width: 18px; height: 18px;"></i>`;
+            }
+            lucide.createIcons({attrs: {class: 'lucide'}});
+        }
+
+        // Layout Toggle Controls
+        function toggleLayout(type) {
+            layoutState = type;
+            const editorLayout = document.getElementById('editor-layout');
+            const rawPane = document.getElementById('raw-pane');
+            const previewPane = document.getElementById('preview-pane');
+
+            // Reset buttons
+            document.getElementById('layout-raw-btn').classList.remove('active');
+            document.getElementById('layout-split-btn').classList.remove('active');
+            document.getElementById('layout-preview-btn').classList.remove('active');
+
+            document.getElementById(`layout-${type}-btn`).classList.add('active');
+
+            if (type === 'raw') {
+                editorLayout.className = 'editor-layout raw-only';
+                rawPane.style.display = 'flex';
+                previewPane.style.display = 'none';
+            } else if (type === 'preview') {
+                editorLayout.className = 'editor-layout preview-only';
+                rawPane.style.display = 'none';
+                previewPane.style.display = 'flex';
+            } else {
+                editorLayout.className = 'editor-layout';
+                rawPane.style.display = 'flex';
+                previewPane.style.display = 'flex';
+            }
+        }
+
+        // Copy Active Content
+        function copyActiveContent() {
+            if (activeFileId === null) return;
+            const file = filesQueue.find(f => f.id === activeFileId);
+            if (!file) return;
+
+            navigator.clipboard.writeText(markdownEditor.value).then(() => {
+                showToast('Copiado', 'Markdown copiado al portapapeles', 'info');
+            });
+        }
+
+        // Download Active File (.md)
+        function downloadActiveFile() {
+            if (activeFileId === null) return;
+            const file = filesQueue.find(f => f.id === activeFileId);
+            if (!file) return;
+
+            const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+            triggerFileDownload(nameWithoutExt + '.md', markdownEditor.value);
+        }
+
+        // Save Active File directly to NODCASA server
+        async function saveActiveToServer() {
+            if (activeFileId === null) return;
+            const file = filesQueue.find(f => f.id === activeFileId);
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('filename', file.name);
+            formData.append('content', markdownEditor.value);
+
+            try {
+                const response = await fetch('/save-server', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Fallo al guardar en el servidor');
+                }
+
+                const result = await response.json();
+                showToast('Guardado en Servidor', `"${result.filename}" guardado directamente en ${result.server_folder}`, 'success');
+            } catch (error) {
+                showToast('Error de Guardado', error.message, 'error');
+            }
+        }
+
+        // Save all processed files to server
+        async function saveAllToServer() {
+            const completedFiles = filesQueue.filter(f => f.status === 'done');
+            if (completedFiles.length === 0) return;
+
+            let successCount = 0;
+            let lastFolder = '';
+
+            for (const file of completedFiles) {
+                const formData = new FormData();
+                formData.append('filename', file.name);
+                formData.append('content', file.markdown);
+
+                try {
+                    const response = await fetch('/save-server', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (response.ok) {
+                        const res = await response.json();
+                        successCount++;
+                        lastFolder = res.server_folder;
+                    }
+                } catch (e) {
+                    console.error("Error guardando lote:", e);
+                }
+            }
+
+            if (successCount > 0) {
+                showToast('Lote Guardado', `Se guardaron ${successCount} archivos en ${lastFolder}`, 'success');
+            } else {
+                showToast('Error', 'No se pudo guardar ningún archivo en el lote', 'error');
+            }
+        }
+
+        // Download all processed files as client-side ZIP
+        function downloadAllZip() {
+            const completedFiles = filesQueue.filter(f => f.status === 'done');
+            if (completedFiles.length === 0) return;
+
+            const zip = new JSZip();
+
+            completedFiles.forEach(file => {
+                const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                zip.file(nameWithoutExt + '.md', file.markdown);
+            });
+
+            zip.generateAsync({type: 'blob'}).then((content) => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `conversiones_rag_${Date.now()}.zip`;
+                link.click();
+                showToast('ZIP Creado', 'Lote descargado como ZIP con éxito.', 'success');
+            });
+        }
+
+        // Show/Hide Batch Actions
+        function showBatchActionsIfNeeded() {
+            const completedCount = filesQueue.filter(f => f.status === 'done').length;
+            if (completedCount > 1) {
+                batchActions.style.display = 'flex';
+            } else {
+                batchActions.style.display = 'none';
+            }
+        }
+
+        // Trigger native download
+        function triggerFileDownload(filename, text) {
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/markdown;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', filename);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        // Helpers
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function getFileIcon(ext) {
+            switch(ext) {
+                case 'pdf': return 'file-text';
+                case 'xlsx':
+                case 'xls': return 'table';
+                case 'docx': return 'file-type-2';
+                case 'pptx': return 'presentation';
+                case 'csv': return 'sheet';
+                case 'json': return 'braces';
+                case 'xml': return 'code';
+                case 'html': return 'chrome';
+                default: return 'file';
+            }
+        }
+
+        function updateQueueCount() {
+            queueCount.textContent = `${filesQueue.length} ${filesQueue.length === 1 ? 'archivo' : 'archivos'}`;
+        }
+
+        // Toast Handler
+        function showToast(title, desc, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastTitle = document.getElementById('toast-title');
+            const toastDesc = document.getElementById('toast-desc');
+            const iconElement = document.getElementById('toast-icon-element');
+
+            toast.className = `toast show ${type}`;
+            toastTitle.textContent = title;
+            toastDesc.textContent = desc;
+
+            let iconName = 'info';
+            if (type === 'success') iconName = 'check-circle';
+            if (type === 'error') iconName = 'alert-triangle';
+
+            iconElement.setAttribute('data-lucide', iconName);
+            lucide.createIcons({attrs: {class: 'lucide'}});
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
