@@ -683,7 +683,12 @@
             <div class="queue-container">
                 <div class="queue-header">
                     <span>Cola de Procesamiento</span>
-                    <span id="queue-count">0 archivos</span>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span id="queue-count">0 archivos</span>
+                        <button onclick="clearQueue()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; transition: var(--transition);" onmouseover="this.style.color='var(--error)'" onmouseout="this.style.color='var(--text-muted)'" title="Limpiar Cola e Interfaz">
+                            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="queue-list" id="queue-list">
                     <!-- Dynamic insertion -->
@@ -1239,6 +1244,30 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 4000);
+        }
+
+        // Clear and Reset UI Queue
+        function clearQueue() {
+            if (filesQueue.length === 0) return;
+            
+            filesQueue = [];
+            activeFileId = null;
+            isProcessing = false;
+            
+            queueList.innerHTML = '';
+            updateQueueCount();
+            showBatchActionsIfNeeded();
+            
+            welcomeScreen.style.display = 'flex';
+            editorContainer.style.display = 'none';
+            welcomeScreen.innerHTML = `
+                <i data-lucide="file-code"></i>
+                <h2>No hay archivos seleccionados</h2>
+                <p>Sube archivos en el panel izquierdo para comenzar la conversión digital.</p>
+            `;
+            lucide.createIcons();
+            
+            showToast('Cola Limpia', 'Se ha restablecido la cola de archivos.', 'info');
         }
     </script>
 </body>
