@@ -794,7 +794,7 @@
         const markdownPreview = document.getElementById('markdown-preview');
         const fileTitleText = document.getElementById('file-title-text');
         const ocrBadge = document.getElementById('ocr-badge');
-        const activeFileTitleIcon = document.querySelector('.active-file-title i');
+        const activeFileTitle = document.getElementById('active-file-title');
 
         // Drag and Drop Events
         ['dragenter', 'dragover'].forEach(eventName => {
@@ -988,8 +988,14 @@
             
             // Set header icon
             const ext = file.name.split('.').pop().toLowerCase();
-            activeFileTitleIcon.setAttribute('data-lucide', getFileIcon(ext));
-            activeFileTitleIcon.className = `lucide ${ext}`;
+            const existingIcon = activeFileTitle.querySelector('svg, i');
+            if (existingIcon) {
+                existingIcon.remove();
+            }
+            const newIcon = document.createElement('i');
+            newIcon.setAttribute('data-lucide', getFileIcon(ext));
+            newIcon.className = `lucide ${ext}`;
+            activeFileTitle.prepend(newIcon);
             
             // Show OCR Badge
             if (file.ocrApplied) {
