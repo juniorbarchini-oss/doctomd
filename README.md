@@ -41,9 +41,7 @@ Si deseas correr la aplicación directamente en tu equipo en lugar de Docker:
        brew install tesseract tesseract-lang poppler
        ```
    *   **En Linux (Debian/Ubuntu):**
-       ```bash
-       sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-spa poppler-utils
-       ```
+       ```bash\n       sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-spa poppler-utils\n       ```
 
 2. **Inicializar Entorno Virtual:**
    ```bash
@@ -100,3 +98,14 @@ services:
 - El backend utiliza `pdf2image` para rasterizar las páginas a 150 DPI y alimentar a `pytesseract`.
 - El parámetro utilizado en Tesseract es `lang='spa+eng'` para soportar texto bilingüe y reconocer caracteres con tildes y eñes correctamente.
 - La detección del PDF escaneado se hace mediante un algoritmo de conteo de caracteres alfabéticos sobre la primera extracción de `markitdown`. Si hay menos de 150 caracteres en total, se activa la tubería de OCR automáticamente.
+
+---
+
+## 🌟 Soporte y Donaciones
+
+Si este microservicio de conversión te ha sido de utilidad para tu RAG o tu bóveda de Obsidian, puedes apoyar el proyecto de dos formas:
+
+1. **Deja una Estrella (Star):** Haz clic en el botón ⭐ en la esquina superior derecha.
+2. **Apóyame en Ko-fi:** Invítame un café para apoyar el desarrollo y mantenimiento de mis utilidades de código abierto:
+
+[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/hbarchini)
